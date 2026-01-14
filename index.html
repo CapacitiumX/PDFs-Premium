@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UltraPDF - CapacitiumX</title>
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e1b4b">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <script>
+        // Manifiesto para icono de instalación
+        const manifest = {
+            "name": "CapacitiumX UltraPDF",
+            "short_name": "UltraPDF",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#0f172a",
+            "theme_color": "#1e3a8a",
+            "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png"}]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+    </script>
+
+    <style>
+        :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
+        body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
+
+        /* Barra Superior Moderna */
+        .top-bar { 
+            height: 60px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
+        }
+        .logo { font-weight: 900; letter-spacing: 1px; color: var(--accent); font-size: 1.2rem; }
+        
+        /* Contenedor de PDF */
+        #viewer-container { 
+            height: calc(100vh - 60px); overflow: auto; 
+            display: flex; flex-direction: column; align-items: center; padding: 20px 0;
+            background: #2d3748; scroll-behavior: smooth;
+        }
+        canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; }
+
+        /* Botones y Controles */
+        .btn { 
+            background: var(--surface); color: white; border: none; padding: 10px 18px; 
+            border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: var(--accent); }
+        .upload-label { background: var(--accent); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        
+        /* Pantalla Vacía */
+        #empty-state {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 80%;
+        }
+        .icon-huge { font-size: 80px; margin-bottom: 20px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="logo">CapacitiumX <span style="color:white; font-weight:300;">PDF</span></div>
+        <div id="controls" style="display:none; gap:10px;">
+            <button class="btn" onclick="zoomIn()">➕</button>
+            <button class="btn" onclick="zoomOut()">➖</button>
+        </div>
+        <label for="file-upload" class="upload-label">Abrir PDF</label>
+        <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
+    </div>
+
+    <div id="viewer-container">
+        <div id="empty-state">
+            <span class="icon-huge">📂</span>
+            <h2>Visor de PDF Ultramoderno</h2>
+            <p style="color: #94a3b8;">Sube un archivo para experimentar la mejor lectura digital de CapacitiumX.</p>
+        </div>
+    </div>
+
+    <script>
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let scale = 1.5;
+        const container = document.getElementById('viewer-container');
+
+        async function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('controls').style.display = 'flex';
+            container.innerHTML = ''; // Limpiar previo
+
+            const reader = new FileReader();
+            reader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
+                renderAllPages();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function renderAllPages() {
+            container.innerHTML = '';
+            for (let num = 1; num <= pdfDoc.numPages; num++) {
+                const page = await pdfDoc.getPage(num);
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = { canvasContext: context, viewport: viewport };
+                await page.render(renderContext).promise;
+                container.appendChild(canvas);
+            }
+        }
+
+        function zoomIn() { scale += 0.2; renderAllPages(); }
+        function zoomOut() { if(scale > 0.6) scale -= 0.2; renderAllPages(); }
+
+        // Registro de Service Worker para instalación
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIChlKSA9PiBlKTs=');
+        }
+    </script>
+</body>
+</html>
