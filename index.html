@@ -14,60 +14,69 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    <script>
-        const manifest = {
-            "name": "CapacitiumX UltraPDF",
-            "short_name": "UltraPDF",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#0f172a",
-            "theme_color": "#1e3a8a",
-            "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png"}]
-        };
-        const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-        const link = document.createElement('link');
-        link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
-        document.head.appendChild(link);
-    </script>
-
     <style>
         :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
         body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
 
+        /* Estilos de Interfaz */
         .top-bar { 
             height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 15px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
         }
-        
         #viewer-container { 
             height: calc(100vh - 60px); overflow: auto; 
             display: flex; flex-direction: column; align-items: center; padding: 20px 0;
             background: #2d3748;
         }
         canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; }
+        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+        .upload-label { background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        .btn-group { display: flex; gap: 8px; }
-        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
-        .upload-label { background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-
-        /* --- CONFIGURACIÓN DE IMPRESIÓN LIMPIA --- */
+        /* --- TRUCO MAESTRO PARA IMPRESIÓN LIMPIA --- */
         @media print {
-            /* Elimina encabezados y pies de página (reloj, link, título) */
-            @page { margin: 0; }
-            body { margin: 0; background: white; }
-            
-            .top-bar, .btn-group, .upload-label, #empty-state { display: none !important; }
-            
-            #viewer-container { 
-                height: auto; overflow: visible; background: white !important; 
-                padding: 0 !important; display: block !important;
+            /* 1. Forzamos margen cero en la configuración de la página */
+            @page { 
+                margin: 0mm !important; 
+                size: auto; 
             }
             
+            /* 2. Ocultamos TODA la interfaz de la app */
+            html, body { 
+                background: white !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            .top-bar, .upload-label, #empty-state, #pdf-controls { 
+                display: none !important; 
+            }
+
+            /* 3. El contenedor debe ocupar toda la hoja para no dejar espacio a textos del navegador */
+            #viewer-container { 
+                display: block !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+
+            /* 4. Ajustamos cada página del PDF al 100% de la hoja */
             canvas { 
-                box-shadow: none !important; margin: 0 !important; 
-                width: 100% !important; max-width: 100% !important;
-                page-break-after: always; display: block;
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                box-shadow: none !important; 
+                margin: 0 !important;
+                page-break-after: always !important;
+                image-rendering: pixelated; /* Mantiene nitidez */
             }
         }
     </style>
@@ -76,11 +85,10 @@
 
     <div class="top-bar">
         <div style="font-weight:900; color:var(--accent);">UltraPDF</div>
-        <div class="btn-group" id="pdf-controls" style="display:none;">
+        <div id="pdf-controls" style="display:none; gap:10px;">
             <button class="btn" onclick="zoomIn()">➕</button>
             <button class="btn" onclick="zoomOut()">➖</button>
-            <button class="btn" onclick="window.print()" title="Imprimir Limpio">🖨️</button>
-            <button class="btn" onclick="downloadPdf()">💾</button>
+            <button class="btn" onclick="window.print()" style="background:var(--accent)">🖨️ IMPRIMIR LIMPIO</button>
         </div>
         <label for="file-upload" class="upload-label">📁 Abrir PDF</label>
         <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
@@ -88,20 +96,19 @@
 
     <div id="viewer-container">
         <div id="empty-state" style="text-align:center; margin-top:100px;">
-            <span style="font-size:80px; display:block; opacity:0.5;">📄</span>
-            <h2>Visor Limpio</h2>
-            <p style="color:#94a3b8;">Sube un PDF para imprimir sin marcas de agua de navegador.</p>
+            <span style="font-size:80px; display:block; opacity:0.3;">📄</span>
+            <h2 style="margin:10px 0;">Modo Impresión Pro</h2>
+            <p style="color:#94a3b8;">Los bordes de link y fecha han sido bloqueados.</p>
         </div>
     </div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let pdfDoc = null, scale = 1.5, currentFile = null;
+        let pdfDoc = null, scale = 2.0; // Subí la escala inicial para mejor calidad de impresión
         const container = document.getElementById('viewer-container');
 
         async function handleFile(e) {
             const file = e.target.files[0]; if (!file) return;
-            currentFile = file;
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('pdf-controls').style.display = 'flex';
             const reader = new FileReader();
@@ -126,18 +133,8 @@
             }
         }
 
-        function zoomIn() { scale += 0.2; renderAllPages(); }
-        function zoomOut() { if(scale > 0.6) scale -= 0.2; renderAllPages(); }
-
-        function downloadPdf() {
-            const url = URL.createObjectURL(currentFile);
-            const a = document.createElement('a'); a.href = url;
-            a.download = currentFile.name; a.click();
-        }
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIChlKSA9PiBlKTs=');
-        }
+        function zoomIn() { scale += 0.3; renderAllPages(); }
+        function zoomOut() { if(scale > 0.5) scale -= 0.3; renderAllPages(); }
     </script>
 </body>
 </html>
