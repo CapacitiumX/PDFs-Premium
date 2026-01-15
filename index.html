@@ -19,7 +19,7 @@
         :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
         body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* Interfaz */
+        /* Interfaz Superior */
         .top-bar { 
             height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
@@ -28,16 +28,16 @@
         #viewer-container { height: calc(100vh - 60px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 10px 0; background: #2d3748; }
         canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 15px; max-width: 98%; height: auto !important; }
         
-        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .upload-label { background: var(--accent); color: white; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn { background: var(--surface); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .upload-label { background: var(--accent); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
 
-        /* Impresión Limpia sin cortes */
+        /* Impresión sin marcas de navegador ni cortes */
         @media print {
-            @page { margin: 0 !important; size: auto; }
-            html, body { background: white !important; height: auto !important; overflow: visible !important; }
-            .top-bar, #empty-state, #pdf-controls { display: none !important; }
-            #viewer-container { display: block !important; height: auto !important; margin: 0 !important; padding: 0 !important; }
-            canvas { display: block !important; width: 100% !important; margin: 0 !important; page-break-inside: avoid !important; page-break-after: always !important; }
+            @page { margin: 0mm !important; size: auto; }
+            html, body { background: white !important; height: auto !important; overflow: visible !important; margin: 0 !important; }
+            .top-bar, #empty-state, #pdf-controls, .upload-label { display: none !important; }
+            #viewer-container { display: block !important; height: auto !important; margin: 0 !important; padding: 0 !important; position: absolute; top: 0; left: 0; width: 100%; }
+            canvas { display: block !important; width: 100% !important; margin: 0 !important; page-break-inside: avoid !important; page-break-after: always !important; border: none !important; }
         }
     </style>
 </head>
@@ -50,50 +50,47 @@
             <button class="btn" onclick="zoomOut()">➖</button>
             <button class="btn" onclick="window.print()" style="background:var(--accent)">🖨️ IMPRIMIR</button>
         </div>
-        <label for="file-upload" class="upload-label">📂 ABRIR</label>
+        <label for="file-upload" class="upload-label">📂 ABRIR PDF</label>
         <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
     </div>
 
     <div id="viewer-container">
         <div id="empty-state" style="text-align:center; margin-top:100px; padding: 20px;">
-            <span style="font-size:80px; display:block; opacity:0.4;">📚</span>
-            <h2>CapacitiumX PDF</h2>
-            <p style="color:#94a3b8;">Instala esta app para abrir PDFs al instante.</p>
+            <span style="font-size:80px; display:block; opacity:0.4;">📄</span>
+            <h2 style="margin-bottom:5px;">CapacitiumX Pro</h2>
+            <p style="color:#94a3b8;">Lector de PDF con impresión limpia.</p>
         </div>
     </div>
 
     <script>
-        // 1. CONFIGURACIÓN DE INSTALACIÓN PROFESIONAL (PWA)
-        const manifestData = {
+        // 1. CONFIGURACIÓN DE APP PARA INSTALACIÓN (MANIFEST)
+        const manifest = {
             "name": "CapacitiumX UltraPDF",
             "short_name": "UltraPDF",
-            "description": "Lector de PDF Profesional",
-            "start_url": "./",
+            "start_url": ".",
             "display": "standalone",
-            "orientation": "portrait-primary",
             "background_color": "#0f172a",
             "theme_color": "#1e3a8a",
             "icons": [
-                { "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
-                { "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "192x192", "type": "image/png" }
+                { "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
             ]
         };
-        const content = encodeURIComponent(JSON.stringify(manifestData));
-        const manifestURL = `data:application/manifest+json,${content}`;
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = manifestURL;
-        document.head.appendChild(link);
+        const stringManifest = JSON.stringify(manifest);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        document.querySelector('head').insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestURL}">`);
 
-        // 2. SERVICE WORKER (Para forzar el botón de instalar en Android)
+        // 2. SERVICE WORKER PARA FORZAR INSTALACIÓN COMO APP NATIVA
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
-            `;
-            const blob = new Blob([swCode], {type: 'application/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
+            window.addEventListener('load', () => {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+                `;
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+            });
         }
 
         // 3. LÓGICA DEL PDF
