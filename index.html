@@ -18,34 +18,30 @@
         :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
         body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* Estilos de Interfaz */
+        /* Interfaz en pantalla */
         .top-bar { 
             height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 15px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
         }
         #viewer-container { 
-            height: calc(100vh - 60px); overflow: auto; 
+            height: calc(100vh - 60px); overflow-y: auto; 
             display: flex; flex-direction: column; align-items: center; padding: 20px 0;
             background: #2d3748;
         }
-        canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; }
-        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+        canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; height: auto !important; }
+        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .upload-label { background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* --- TRUCO MAESTRO PARA IMPRESIÓN LIMPIA --- */
+        /* --- SISTEMA DE IMPRESIÓN SIN CORTES --- */
         @media print {
-            /* 1. Forzamos margen cero en la configuración de la página */
             @page { 
-                margin: 0mm !important; 
+                margin: 0 !important; 
                 size: auto; 
             }
             
-            /* 2. Ocultamos TODA la interfaz de la app */
             html, body { 
                 background: white !important; 
-                margin: 0 !important; 
-                padding: 0 !important;
                 height: auto !important;
                 overflow: visible !important;
             }
@@ -54,29 +50,25 @@
                 display: none !important; 
             }
 
-            /* 3. El contenedor debe ocupar toda la hoja para no dejar espacio a textos del navegador */
             #viewer-container { 
                 display: block !important;
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: auto !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 overflow: visible !important;
+                height: auto !important;
             }
 
-            /* 4. Ajustamos cada página del PDF al 100% de la hoja */
             canvas { 
                 display: block !important;
-                width: 100% !important;
-                height: auto !important;
+                width: 100% !important; 
+                max-width: 100% !important;
                 box-shadow: none !important; 
                 margin: 0 !important;
+                /* Evita que el contenido se corte entre hojas */
+                page-break-inside: avoid !important;
                 page-break-after: always !important;
-                image-rendering: pixelated; /* Mantiene nitidez */
+                break-after: page !important;
             }
         }
     </style>
@@ -88,7 +80,7 @@
         <div id="pdf-controls" style="display:none; gap:10px;">
             <button class="btn" onclick="zoomIn()">➕</button>
             <button class="btn" onclick="zoomOut()">➖</button>
-            <button class="btn" onclick="window.print()" style="background:var(--accent)">🖨️ IMPRIMIR LIMPIO</button>
+            <button class="btn" onclick="window.print()" style="background:var(--accent)">🖨️ IMPRIMIR</button>
         </div>
         <label for="file-upload" class="upload-label">📁 Abrir PDF</label>
         <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
@@ -97,14 +89,14 @@
     <div id="viewer-container">
         <div id="empty-state" style="text-align:center; margin-top:100px;">
             <span style="font-size:80px; display:block; opacity:0.3;">📄</span>
-            <h2 style="margin:10px 0;">Modo Impresión Pro</h2>
-            <p style="color:#94a3b8;">Los bordes de link y fecha han sido bloqueados.</p>
+            <h2 style="margin:10px 0;">UltraPDF Pro</h2>
+            <p style="color:#94a3b8;">Ajuste automático de página activado.</p>
         </div>
     </div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let pdfDoc = null, scale = 2.0; // Subí la escala inicial para mejor calidad de impresión
+        let pdfDoc = null, scale = 2.0; 
         const container = document.getElementById('viewer-container');
 
         async function handleFile(e) {
@@ -124,17 +116,19 @@
             container.innerHTML = '';
             for (let num = 1; num <= pdfDoc.numPages; num++) {
                 const page = await pdfDoc.getPage(num);
+                // Usamos una escala alta para que la impresión no salga borrosa
                 const viewport = page.getViewport({ scale: scale });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-                canvas.height = viewport.height; canvas.width = viewport.width;
+                canvas.height = viewport.height; 
+                canvas.width = viewport.width;
                 await page.render({ canvasContext: context, viewport: viewport }).promise;
                 container.appendChild(canvas);
             }
         }
 
-        function zoomIn() { scale += 0.3; renderAllPages(); }
-        function zoomOut() { if(scale > 0.5) scale -= 0.3; renderAllPages(); }
+        function zoomIn() { scale += 0.2; renderAllPages(); }
+        function zoomOut() { if(scale > 0.5) scale -= 0.2; renderAllPages(); }
     </script>
 </body>
 </html>
