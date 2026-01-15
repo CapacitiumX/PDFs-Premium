@@ -3,18 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UltraPDF - CapacitiumX</title>
+    <title>UltraPDF Pro - CapacitiumX</title>
 
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1e1b4b">
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-    <script>
-        // Manifiesto para icono de instalación
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png"> <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png"> <script>
         const manifest = {
             "name": "CapacitiumX UltraPDF",
             "short_name": "UltraPDF",
@@ -22,7 +16,18 @@
             "display": "standalone",
             "background_color": "#0f172a",
             "theme_color": "#1e3a8a",
-            "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png"}]
+            "icons": [
+                {
+                    "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", // Icono principal
+                    "sizes": "512x512",
+                    "type": "image/png"
+                },
+                {
+                    "src": "https://cdn-icons-png.flaticon.com/192/337/337946.png", // Versión 192x192
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
         };
         const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
         const link = document.createElement('link');
@@ -31,84 +36,116 @@
         document.head.appendChild(link);
     </script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+
     <style>
         :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
         body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* Barra Superior Moderna */
+        /* Barra Superior */
         .top-bar { 
-            height: 60px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0 20px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
+            padding: 0 15px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
         }
-        .logo { font-weight: 900; letter-spacing: 1px; color: var(--accent); font-size: 1.2rem; }
+        .logo { font-weight: 900; color: var(--accent); font-size: 1rem; text-transform: uppercase; }
         
-        /* Contenedor de PDF */
+        /* Contenedor del Visor */
         #viewer-container { 
             height: calc(100vh - 60px); overflow: auto; 
             display: flex; flex-direction: column; align-items: center; padding: 20px 0;
-            background: #2d3748; scroll-behavior: smooth;
+            background: #2d3748;
         }
         canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; }
 
-        /* Botones y Controles */
+        /* Grupo de Botones */
+        .btn-group { display: flex; gap: 8px; }
         .btn { 
-            background: var(--surface); color: white; border: none; padding: 10px 18px; 
-            border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s;
-            display: flex; align-items: center; gap: 8px;
+            background: var(--surface); color: white; border: none; padding: 8px 12px; 
+            border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
         }
         .btn:hover { background: var(--accent); }
-        .upload-label { background: var(--accent); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-        
-        /* Pantalla Vacía */
+        .btn-main { background: var(--accent); font-weight: bold; }
+
+        /* Estilo para el input de archivo oculto */
+        #file-upload { display: none; }
+        .upload-label { 
+            background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; 
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s;
+        }
+        .upload-label:hover { background: #5c8cf7; }
+
+        /* Estado vacío */
         #empty-state {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; width: 80%;
         }
-        .icon-huge { font-size: 80px; margin-bottom: 20px; display: block; }
+        .icon-huge { font-size: 80px; margin-bottom: 20px; display: block; opacity: 0.6; }
+
+        /* Ocultar elementos en modo impresión */
+        @media print {
+            .top-bar, #empty-state { display: none !important; }
+            #viewer-container { height: auto; overflow: visible; background: white; padding: 0; }
+            canvas { box-shadow: none; margin: 0; page-break-after: always; max-width: 100%; }
+        }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div class="logo">CapacitiumX <span style="color:white; font-weight:300;">PDF</span></div>
-        <div id="controls" style="display:none; gap:10px;">
-            <button class="btn" onclick="zoomIn()">➕</button>
-            <button class="btn" onclick="zoomOut()">➖</button>
+        <div class="logo">UltraPDF</div>
+        
+        <div class="btn-group" id="pdf-controls" style="display:none;">
+            <button class="btn" onclick="zoomIn()" title="Acercar">🔍➕</button>
+            <button class="btn" onclick="zoomOut()" title="Alejar">🔍➖</button>
+            <button class="btn" onclick="printPdf()" title="Imprimir">🖨️</button>
+            <button class="btn" onclick="downloadPdf()" title="Guardar Original">💾</button>
         </div>
-        <label for="file-upload" class="upload-label">Abrir PDF</label>
-        <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
+        
+        <label for="file-upload" class="upload-label">📁 Abrir PDF</label>
+        <input type="file" id="file-upload" accept="application/pdf" onchange="handleFile(event)">
     </div>
 
     <div id="viewer-container">
         <div id="empty-state">
-            <span class="icon-huge">📂</span>
-            <h2>Visor de PDF Ultramoderno</h2>
-            <p style="color: #94a3b8;">Sube un archivo para experimentar la mejor lectura digital de CapacitiumX.</p>
+            <span class="icon-huge">📚</span>
+            <h2>CapacitiumX UltraPDF</h2>
+            <p style="color: #94a3b8;">Sube un documento PDF para empezar a visualizarlo.</p>
         </div>
     </div>
 
     <script>
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        // Configuración del Worker para PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        let pdfDoc = null;
-        let scale = 1.5;
+        let pdfDoc = null; // Objeto del documento PDF
+        let scale = 1.5;   // Escala de visualización
+        let currentFile = null; // Para guardar el archivo original para descargar
         const container = document.getElementById('viewer-container');
+        const pdfControls = document.getElementById('pdf-controls');
 
         async function handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
 
+            currentFile = file; // Guardar el archivo para la descarga
+
             document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('controls').style.display = 'flex';
-            container.innerHTML = ''; // Limpiar previo
+            pdfControls.style.display = 'flex'; // Mostrar controles del PDF
+            container.innerHTML = ''; // Limpiar el visor
 
             const reader = new FileReader();
             reader.onload = async function() {
                 const typedarray = new Uint8Array(this.result);
-                pdfDoc = await pdfjsLib.getDocument(typedarray).promise;
-                renderAllPages();
+                try {
+                    pdfDoc = await pdfjsLib.getDocument({data: typedarray}).promise;
+                    renderAllPages();
+                } catch (error) {
+                    alert('Error al cargar el PDF: ' + error.message);
+                    resetViewer();
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -129,10 +166,50 @@
             }
         }
 
-        function zoomIn() { scale += 0.2; renderAllPages(); }
-        function zoomOut() { if(scale > 0.6) scale -= 0.2; renderAllPages(); }
+        function zoomIn() { 
+            scale += 0.2; 
+            renderAllPages(); 
+        }
 
-        // Registro de Service Worker para instalación
+        function zoomOut() { 
+            if(scale > 0.6) scale -= 0.2; 
+            renderAllPages(); 
+        }
+
+        function printPdf() {
+            if (pdfDoc) {
+                // Usa la función nativa de impresión del navegador
+                window.print();
+            } else {
+                alert("Primero abre un PDF para imprimir.");
+            }
+        }
+
+        function downloadPdf() {
+            if (currentFile) {
+                const url = URL.createObjectURL(currentFile);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentFile.name; // Usa el nombre original del archivo
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url); // Libera la memoria
+            } else {
+                alert("No hay ningún PDF abierto para descargar.");
+            }
+        }
+
+        function resetViewer() {
+            pdfDoc = null;
+            currentFile = null;
+            container.innerHTML = '';
+            document.getElementById('empty-state').style.display = 'block';
+            pdfControls.style.display = 'none';
+            document.getElementById('file-upload').value = ''; // Resetear el input file
+        }
+
+        // Registro de Service Worker para permitir la instalación como PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('data:application/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdmZXRjaCcsIChlKSA9PiBlKTs=');
         }
