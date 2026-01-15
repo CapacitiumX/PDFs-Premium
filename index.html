@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UltraPDF Pro - CapacitiumX</title>
+    <title>UltraPDF Pro</title>
 
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1e1b4b">
     
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/337/337946.png">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -18,85 +19,86 @@
         :root { --primary: #1e3a8a; --dark: #0f172a; --accent: #3b82f6; --surface: #1e293b; }
         body { margin: 0; padding: 0; background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* Interfaz en pantalla */
+        /* Interfaz */
         .top-bar { 
             height: 60px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0 15px; border-bottom: 1px solid var(--surface); z-index: 100; position: relative;
+            padding: 0 15px; border-bottom: 1px solid var(--surface); z-index: 100;
         }
-        #viewer-container { 
-            height: calc(100vh - 60px); overflow-y: auto; 
-            display: flex; flex-direction: column; align-items: center; padding: 20px 0;
-            background: #2d3748;
-        }
-        canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; max-width: 95%; height: auto !important; }
-        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .upload-label { background: var(--accent); color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #viewer-container { height: calc(100vh - 60px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 10px 0; background: #2d3748; }
+        canvas { box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 15px; max-width: 98%; height: auto !important; }
+        
+        .btn { background: var(--surface); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .upload-label { background: var(--accent); color: white; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; }
 
-        /* --- SISTEMA DE IMPRESIÓN SIN CORTES --- */
+        /* Impresión Limpia sin cortes */
         @media print {
-            @page { 
-                margin: 0 !important; 
-                size: auto; 
-            }
-            
-            html, body { 
-                background: white !important; 
-                height: auto !important;
-                overflow: visible !important;
-            }
-
-            .top-bar, .upload-label, #empty-state, #pdf-controls { 
-                display: none !important; 
-            }
-
-            #viewer-container { 
-                display: block !important;
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow: visible !important;
-                height: auto !important;
-            }
-
-            canvas { 
-                display: block !important;
-                width: 100% !important; 
-                max-width: 100% !important;
-                box-shadow: none !important; 
-                margin: 0 !important;
-                /* Evita que el contenido se corte entre hojas */
-                page-break-inside: avoid !important;
-                page-break-after: always !important;
-                break-after: page !important;
-            }
+            @page { margin: 0 !important; size: auto; }
+            html, body { background: white !important; height: auto !important; overflow: visible !important; }
+            .top-bar, #empty-state, #pdf-controls { display: none !important; }
+            #viewer-container { display: block !important; height: auto !important; margin: 0 !important; padding: 0 !important; }
+            canvas { display: block !important; width: 100% !important; margin: 0 !important; page-break-inside: avoid !important; page-break-after: always !important; }
         }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div style="font-weight:900; color:var(--accent);">UltraPDF</div>
+        <div style="font-weight:900; color:var(--accent); letter-spacing:1px;">UltraPDF</div>
         <div id="pdf-controls" style="display:none; gap:10px;">
             <button class="btn" onclick="zoomIn()">➕</button>
             <button class="btn" onclick="zoomOut()">➖</button>
             <button class="btn" onclick="window.print()" style="background:var(--accent)">🖨️ IMPRIMIR</button>
         </div>
-        <label for="file-upload" class="upload-label">📁 Abrir PDF</label>
+        <label for="file-upload" class="upload-label">📂 ABRIR</label>
         <input type="file" id="file-upload" accept="application/pdf" style="display:none;" onchange="handleFile(event)">
     </div>
 
     <div id="viewer-container">
-        <div id="empty-state" style="text-align:center; margin-top:100px;">
-            <span style="font-size:80px; display:block; opacity:0.3;">📄</span>
-            <h2 style="margin:10px 0;">UltraPDF Pro</h2>
-            <p style="color:#94a3b8;">Ajuste automático de página activado.</p>
+        <div id="empty-state" style="text-align:center; margin-top:100px; padding: 20px;">
+            <span style="font-size:80px; display:block; opacity:0.4;">📚</span>
+            <h2>CapacitiumX PDF</h2>
+            <p style="color:#94a3b8;">Instala esta app para abrir PDFs al instante.</p>
         </div>
     </div>
 
     <script>
+        // 1. CONFIGURACIÓN DE INSTALACIÓN PROFESIONAL (PWA)
+        const manifestData = {
+            "name": "CapacitiumX UltraPDF",
+            "short_name": "UltraPDF",
+            "description": "Lector de PDF Profesional",
+            "start_url": "./",
+            "display": "standalone",
+            "orientation": "portrait-primary",
+            "background_color": "#0f172a",
+            "theme_color": "#1e3a8a",
+            "icons": [
+                { "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+                { "src": "https://cdn-icons-png.flaticon.com/512/337/337946.png", "sizes": "192x192", "type": "image/png" }
+            ]
+        };
+        const content = encodeURIComponent(JSON.stringify(manifestData));
+        const manifestURL = `data:application/manifest+json,${content}`;
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+
+        // 2. SERVICE WORKER (Para forzar el botón de instalar en Android)
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+            `;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+
+        // 3. LÓGICA DEL PDF
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        let pdfDoc = null, scale = 2.0; 
+        let pdfDoc = null, scale = 2.0;
         const container = document.getElementById('viewer-container');
 
         async function handleFile(e) {
@@ -116,19 +118,17 @@
             container.innerHTML = '';
             for (let num = 1; num <= pdfDoc.numPages; num++) {
                 const page = await pdfDoc.getPage(num);
-                // Usamos una escala alta para que la impresión no salga borrosa
                 const viewport = page.getViewport({ scale: scale });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
-                canvas.height = viewport.height; 
-                canvas.width = viewport.width;
+                canvas.height = viewport.height; canvas.width = viewport.width;
                 await page.render({ canvasContext: context, viewport: viewport }).promise;
                 container.appendChild(canvas);
             }
         }
 
-        function zoomIn() { scale += 0.2; renderAllPages(); }
-        function zoomOut() { if(scale > 0.5) scale -= 0.2; renderAllPages(); }
+        function zoomIn() { scale += 0.3; renderAllPages(); }
+        function zoomOut() { if(scale > 0.5) scale -= 0.3; renderAllPages(); }
     </script>
 </body>
 </html>
